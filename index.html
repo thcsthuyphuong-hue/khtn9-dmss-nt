@@ -38,7 +38,6 @@
         const auth = getAuth(app);
         const appId = "bai-12-khtn9";
 
-        // Xác thực ẩn danh trước khi thao tác
         const ensureAuth = async () => {
             if (!auth.currentUser) {
                 await signInAnonymously(auth);
@@ -46,9 +45,8 @@
             return auth.currentUser;
         };
 
-        // CHỈ LƯU kết quả nếu là mode 'exam'
         window.saveResultToFirebase = async (data, mode) => {
-            if (mode !== 'exam') return; // Không lưu phần Luyện tập
+            if (mode !== 'exam') return; 
             try {
                 const user = await ensureAuth();
                 if (!user) return;
@@ -57,7 +55,6 @@
             } catch (e) { console.error("Lỗi lưu Firebase: ", e); }
         };
 
-        // Lắng nghe danh sách kết quả kiểm tra
         window.listenResults = async (callback) => {
             try {
                 const user = await ensureAuth();
@@ -115,11 +112,12 @@
         .btn-teacher { background: #455a64; color: white; margin-top: 10px; }
         .btn-next { background: var(--accent); color: white; }
         .btn-back { background: #b0bec5; color: #37474f; }
-        .btn-delete { background: var(--error); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .btn-delete { background: var(--error); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn-view { background: var(--accent); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-right: 5px; }
 
         .part-header { background: #263238; color: white; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; text-align: center; font-size: 13px; }
         .question-content { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1a237e; line-height: 1.6; }
-        .option-item { background: #eceff1; padding: 14px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .option-item { background: #eceff1; padding: 14px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
         .option-item.selected { border-color: var(--primary-light); background: #e3f2fd; }
 
         .tf-row { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
@@ -132,7 +130,6 @@
         .short-ans-input { width: 100%; padding: 15px; border: 3px solid var(--primary-light); border-radius: 12px; font-size: 22px; text-align: center; outline: none; }
         .decimal-hint { color: var(--error); font-size: 13px; font-weight: 600; margin-top: 10px; display: block; text-align: center; }
 
-        /* UI Alert Modals */
         #ui-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; z-index: 1000; justify-content: center; align-items: center; }
         #ui-alert { background: white; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
         .ui-alert-btns { display: flex; gap: 10px; margin-top: 20px; }
@@ -197,6 +194,13 @@
             <button class="btn btn-back" style="margin-top: 20px;" onclick="location.reload()">THOÁT</button>
         </div>
 
+        <!-- TEACHER SUBMISSION DETAIL SCREEN -->
+        <div id="screen-teacher-detail" class="screen">
+            <h2 id="detail-student-name">BÀI LÀM CHI TIẾT</h2>
+            <div id="detail-review-list"></div>
+            <button class="btn btn-back" style="margin-top: 20px;" onclick="backToDashboard()">QUAY LẠI DANH SÁCH</button>
+        </div>
+
         <!-- QUIZ SCREEN -->
         <div id="screen-quiz" class="screen">
             <div id="part-label" class="part-header">...</div>
@@ -223,7 +227,7 @@
         </div>
     </div>
 
-    <!-- CUSTOM UI MODAL -->
+    <!-- UI MODAL -->
     <div id="ui-overlay">
         <div id="ui-alert">
             <h3 id="ui-title">THÔNG BÁO</h3>
@@ -236,7 +240,6 @@
 
     <script>
         const BANK = [
-            // MCQ (24 câu trích từ Word)
             { id: '12.1', type: 'mcq', question: 'Đoạn mạch gồm hai điện trở thành phần mắc nối tiếp. Khẳng định nào sau đây là đúng về điện trở tương đương của đoạn mạch?', options: ['Bằng tổng các điện trở thành phần.', 'Nhỏ hơn điện trở thành phần nhỏ nhất.', 'Bằng tích các điện trở thành phần.', 'Bằng hiệu các điện trở thành phần.'], correctAnswer: 0, explanation: 'Trong đoạn mạch nối tiếp, điện trở tương đương bằng tổng các điện trở thành phần: $R_{td} = R_1 + R_2$.' },
             { id: '12.2', type: 'mcq', question: 'Đối với đoạn mạch gồm hai điện trở mắc song song, điện trở tương đương của đoạn mạch KHÔNG thể có đặc điểm nào sau đây?', options: ['Nhỏ hơn điện trở thành phần thứ nhất.', 'Nhỏ hơn điện trở thành phần thứ hai.', 'Lớn hơn các điện trở thành phần.', 'Nhỏ hơn điện trở thành phần nhỏ nhất.'], correctAnswer: 2, explanation: 'Đối với đoạn mạch song song, điện trở tương đương luôn nhỏ hơn các điện trở thành phần ($R_{td} < R_{min}$).' },
             { id: '12.3', type: 'mcq', question: 'Trong một đoạn mạch mắc nối tiếp gồm hai điện trở khác nhau, đại lượng nào sau đây có giá trị như nhau tại mọi điểm?', options: ['Điện trở tương đương.', 'Hiệu điện thế.', 'Cường độ dòng điện.', 'Điện trở thành phần.'], correctAnswer: 2, explanation: 'Tính chất đặc trưng của đoạn mạch nối tiếp là cường độ dòng điện như nhau tại mọi điểm: $I = I_1 = I_2$.' },
@@ -246,41 +249,41 @@
             { id: '12.7', type: 'mcq', question: 'Đoạn mạch gồm hai điện trở mắc nối tiếp, hiệu điện thế giữa hai đầu mỗi điện trở lần lượt là $6 \\, V$ và $4 \\, V$. Hiệu điện thế giữa hai đầu toàn mạch là', options: ['2 V.', '6 V.', '4 V.', '10 V.'], correctAnswer: 3, explanation: '$U = U_1 + U_2 = 6 + 4 = 10 \\, V$.' },
             { id: '12.8', type: 'mcq', question: 'Trong mạch điện mắc song song gồm hai nhánh, cường độ dòng điện qua các nhánh lần lượt là $1 \\, A$ và $1,5 \\, A$. Cường độ dòng điện mạch chính là', options: ['0,5 A.', '1 A.', '1,5 A.', '2,5 A.'], correctAnswer: 3, explanation: '$I = I_1 + I_2 = 1 + 1,5 = 2,5 \\, A$.' },
             { id: '12.9', type: 'mcq', question: 'Biểu thức tính điện trở tương đương của đoạn mạch gồm ba điện trở mắc nối tiếp là', options: ['$R_{td} = R_1 + R_2 + R_3$.', '$\\frac{1}{R_{td}} = \\frac{1}{R_1} + \\frac{1}{R_2} + \\frac{1}{R_3}$.', '$R_{td} = R_1 = R_2 = R_3$.', '$R_{td} = R_1 \\cdot R_2 \\cdot R_3$.'], correctAnswer: 0, explanation: 'Trong mạch nối tiếp, điện trở tương đương bằng tổng các điện trở thành phần.' },
-            { id: '12.10', type: 'mcq', question: 'Phát biểu nào sau đây đúng khi nói về mạch điện gia đình gồm các thiết bị điện mắc song song?', options: ['Điện trở tương đương của toàn mạch lớn hơn điện trở của mỗi thiết bị.', 'Khi bật thêm một thiết bị, điện trở tương đương của toàn mạch giảm.', 'Cường độ dòng điện qua mạch chính không thay đổi khi bật thêm thiết bị.', 'Hiệu điện thế giữa hai đầu mỗi thiết bị nhỏ hơn hiệu điện thế mạch chính.'], correctAnswer: 1, explanation: 'Mắc thêm song song làm giảm điện trở tổng của toàn mạch.' },
-            { id: '12.11', type: 'mcq', question: 'Đặt một hiệu điện thế $12 \\, V$ vào hai đầu đoạn mạch gồm điện trở $4 \\, \\Omega$ và $8 \\, \\Omega$ mắc nối tiếp. Cường độ dòng điện chạy qua mạch là', options: ['1 A.', '3 A.', '1,5 A.', '0,5 A.'], correctAnswer: 0, explanation: '$R_{td} = 4 + 8 = 12 \\, \\Omega \\implies I = 12 / 12 = 1 \\, A$.' },
-            { id: '12.12', type: 'mcq', question: 'Hai điện trở $10 \\, \\Omega$ và $15 \\, \\Omega$ mắc song song vào nguồn điện $6 \\, V$. Cường độ dòng điện trong mạch chính có cường độ là', options: ['1 A.', '0,24 A.', '0,4 A.', '0,6 A.'], correctAnswer: 0, explanation: '$R_{td} = \\frac{10 \\cdot 15}{10+15} = 6 \\, \\Omega \\implies I = 6/6 = 1 \\, A$.' },
-            { id: '12.13', type: 'mcq', question: 'Một Ampe kế mắc nối tiếp với một điện trở vào nguồn điện. Nếu thay điện trở đó bằng một điện trở khác có giá trị lớn hơn, số chỉ của Ampe kế sẽ', options: ['tăng lên.', 'giảm đi.', 'không đổi.', 'tăng rồi giảm.'], correctAnswer: 1, explanation: 'Định luật Ohm $I = U/R$, $R$ tăng thì $I$ giảm.' },
-            { id: '12.14', type: 'mcq', question: 'Mắc song song hai bóng đèn giống hệt nhau vào nguồn điện. Nếu một bóng đèn bị đứt dây tóc, độ sáng của bóng đèn còn lại sẽ', options: ['sáng mạnh hơn.', 'sáng yếu hơn.', 'không thay đổi.', 'tắt hẳn.'], correctAnswer: 2, explanation: 'Mạch song song các nhánh hoạt động độc lập.' },
-            { id: '12.15', type: 'mcq', question: 'Cho 3 điện trở giống nhau có cùng giá trị $12 \\, \\Omega$ mắc song song. Điện trở tương đương của mạch là', options: ['36 $\\Omega$.', '4 $\\Omega$.', '12 $\\Omega$.', '8 $\\Omega$.'], correctAnswer: 1, explanation: '$R_{td} = 12 / 3 = 4 \\, \\Omega$.' },
-            { id: '12.16', type: 'mcq', question: 'Có hai điện trở, nếu mắc nối tiếp thì $R_{td} = 25 \\, \\Omega$, nếu mắc song song thì $R_{td} = 6 \\, \\Omega$. Giá trị hai điện trở đó là', options: ['10 $\\Omega$ và 15 $\\Omega$.', '5 $\\Omega$ và 20 $\\Omega$.', '12 $\\Omega$ và 13 $\\Omega$.', '8 $\\Omega$ và 17 $\\Omega$.'], correctAnswer: 0, explanation: 'Kiểm tra: $10+15=25$ và $(10 \\cdot 15)/25 = 6$.' },
-            { id: '12.17', type: 'mcq', question: 'Để kiểm tra công thức tính điện trở tương đương của mạch mắc song song, dụng cụ đo nào là KHÔNG cần thiết?', options: ['Vôn kế.', 'Ampe kế.', 'Điện trở mẫu.', 'Nhiệt kế.'], correctAnswer: 3, explanation: 'Nhiệt kế không đo điện.' },
-            { id: '12.18', type: 'mcq', question: 'Một mạch điện gồm ba điện trở $5 \\, \\Omega, 10 \\, \\Omega, 15 \\, \\Omega$ mắc nối tiếp. Nếu $I = 0,2 \\, A$ thì hiệu điện thế hai đầu mạch là', options: ['6 V.', '3 V.', '1,5 V.', '4,5 V.'], correctAnswer: 0, explanation: '$U = 0,2 \\cdot 30 = 6 \\, V$.' },
-            { id: '12.19', type: 'mcq', question: 'Mạch nối tiếp, nếu điện trở thứ nhất lớn gấp đôi thứ hai thì hiệu điện thế đầu thứ nhất sẽ', options: ['bằng đầu thứ hai.', 'gấp đôi đầu thứ hai.', 'bằng một nửa đầu thứ hai.', 'không so sánh được.'], correctAnswer: 1, explanation: '$U$ tỉ lệ thuận $R$.' },
-            { id: '12.20', type: 'mcq', question: 'Mạch song song, nếu điện trở thứ nhất lớn gấp đôi thứ hai thì cường độ qua thứ nhất sẽ', options: ['bằng qua thứ hai.', 'gấp đôi qua thứ hai.', 'bằng một nửa qua thứ hai.', 'không phụ thuộc.'], correctAnswer: 2, explanation: '$I$ tỉ lệ nghịch $R$.' },
-            { id: '12.21', type: 'mcq', question: 'Đặc điểm nào sau đây KHÔNG phải của đoạn mạch mắc nối tiếp?', options: ['Dòng điện chỉ có 1 đường đi.', 'Thiết bị hoạt động độc lập.', 'Dòng qua mỗi thiết bị như nhau.', 'Rtd bằng tổng các R thành phần.'], correctAnswer: 1, explanation: 'Hỏng 1 cái thì hở mạch.' },
-            { id: '12.22', type: 'mcq', question: 'Mạch gồm $6 \\, \\Omega$ nt với cụm ($10 \\, \\Omega$ // $15 \\, \\Omega$). Điện trở tương đương là', options: ['12 $\\Omega$.', '31 $\\Omega$.', '10 $\\Omega$.', '24 $\\Omega$.'], correctAnswer: 0, explanation: '$6 + 6 = 12 \\, \\Omega$.' },
-            { id: '12.23', type: 'mcq', question: 'Mạch trên nếu hiệu điện thế hai đầu là $24 \\, V$ thì cường độ dòng mạch chính là', options: ['2 A.', '1 A.', '1,5 A.', '2,4 A.'], correctAnswer: 0, explanation: '$24 / 12 = 2 \\, A$.' },
-            { id: '12.24', type: 'mcq', question: 'Một bóng đèn $12 \\, V - 0,5 \\, A$ ss với điện trở $24 \\, \\Omega$ vào nguồn $12 \\, V$. Dòng mạch chính là', options: ['0,5 A.', '1 A.', '1,5 A.', '0,25 A.'], correctAnswer: 1, explanation: '$0,5 + 12/24 = 1 \\, A$.' },
+            { id: '12.10', type: 'mcq', question: 'Phát biểu nào sau đây đúng khi nói về mạch điện gia đình gồm các thiết bị điện mắc song song?', options: ['Điện trở tương đương của toàn mạch lớn hơn điện trở của mỗi thiết bị.', 'Khi bật thêm một thiết bị, điện trở tương đương của toàn mạch giảm.', 'Cường độ dòng điện qua mạch chính không thay đổi khi bật thêm thiết bị.', 'Hiệu điện thế giữa hai đầu mỗi thiết bị nhỏ hơn hiệu điện thế mạch chính.'], correctAnswer: 1, explanation: 'Mắc thêm song song làm giảm điện trở tổng.' },
+            { id: '12.11', type: 'mcq', question: 'Đặt một hiệu điện thế $12 \\, V$ vào hai đầu đoạn mạch gồm điện trở $4 \\, \\Omega$ và $8 \\, \\Omega$ mắc nối tiếp. Cường độ dòng điện chạy qua mạch là', options: ['1 A.', '3 A.', '1,5 A.', '0,5 A.'], correctAnswer: 0, explanation: '$R_{td}=12 \\, \\Omega \\implies I=1 \\, A$.' },
+            { id: '12.12', type: 'mcq', question: 'Hai điện trở $10 \\, \\Omega$ và $15 \\, \\Omega$ mắc song song vào nguồn điện $6 \\, V$. Cường độ dòng điện trong mạch chính có cường độ là', options: ['1 A.', '0,24 A.', '0,4 A.', '0,6 A.'], correctAnswer: 0, explanation: '$R_{td}=6 \\, \\Omega \\implies I=1 \\, A$.' },
+            { id: '12.13', type: 'mcq', question: 'Một Ampe kế mắc nối tiếp với một điện trở. Nếu thay bằng điện trở khác lớn hơn, số chỉ Ampe kế sẽ', options: ['Tăng.', 'Giảm.', 'Không đổi.', 'Tăng rồi giảm.'], correctAnswer: 1, explanation: 'Ohm $I=U/R$.' },
+            { id: '12.14', type: 'mcq', question: 'Mắc song song hai đèn giống hệt nhau. Nếu một đèn đứt, độ sáng đèn còn lại sẽ', options: ['Sáng mạnh hơn.', 'Sáng yếu hơn.', 'Không thay đổi.', 'Tắt hẳn.'], correctAnswer: 2, explanation: 'Hiệu điện thế nhánh không đổi.' },
+            { id: '12.15', type: 'mcq', question: 'Cho 3 điện trở giống nhau cùng giá trị $12 \\, \\Omega$ mắc song song. Điện trở tương đương là', options: ['36 $\\Omega$.', '4 $\\Omega$.', '12 $\\Omega$.', '8 $\\Omega$.'], correctAnswer: 1, explanation: '$12/3=4 \\, \\Omega$.' },
+            { id: '12.16', type: 'mcq', question: 'Hai điện trở, nối tiếp $R_{td} = 25 \\, \\Omega$, song song $R_{td} = 6 \\, \\Omega$. Giá trị hai điện trở đó là', options: ['10 $\\Omega$ và 15 $\\Omega$.', '5 $\\Omega$ và 20 $\\Omega$.', '12 $\\Omega$ và 13 $\\Omega$.', '8 $\\Omega$ và 17 $\\Omega$.'], correctAnswer: 0, explanation: '$10+15=25$ và $(10 \\cdot 15)/25=6$.' },
+            { id: '12.17', type: 'mcq', question: 'Dụng cụ nào KHÔNG cần thiết để đo điện trở tương đương mạch song song?', options: ['Vôn kế.', 'Ampe kế.', 'Điện trở mẫu.', 'Nhiệt kế.'], correctAnswer: 3, explanation: 'Nhiệt kế không đo điện.' },
+            { id: '12.18', type: 'mcq', question: 'Mạch điện gồm $5, 10, 15 \\, \\Omega$ mắc nối tiếp. Nếu $I = 0,2 \\, A$ thì $U$ toàn mạch là', options: ['6 V.', '3 V.', '1,5 V.', '4,5 V.'], correctAnswer: 0, explanation: '$0,2 \cdot 30 = 6 \\, V$.' },
+            { id: '12.19', type: 'mcq', question: 'Mạch nối tiếp, nếu điện trở thứ nhất gấp đôi thứ hai thì hiệu điện thế đầu thứ nhất sẽ', options: ['bằng đầu thứ hai.', 'gấp đôi đầu thứ hai.', 'bằng một nửa đầu thứ hai.', 'không so sánh được.'], correctAnswer: 1, explanation: '$U \\sim R$ nt.' },
+            { id: '12.20', type: 'mcq', question: 'Mạch song song, nếu điện trở thứ nhất gấp đôi thứ hai thì cường độ qua thứ nhất sẽ', options: ['bằng qua thứ hai.', 'gấp đôi qua thứ hai.', 'bằng một nửa qua thứ hai.', 'không phụ thuộc.'], correctAnswer: 2, explanation: '$I \\sim 1/R$ ss.' },
+            { id: '12.21', type: 'mcq', question: 'Đặc điểm nào sau đây KHÔNG phải của đoạn mạch mắc nối tiếp?', options: ['Dòng điện có 1 đường đi.', 'Thiết bị hoạt động độc lập.', 'Dòng qua mỗi thiết bị như nhau.', 'Rtd bằng tổng các R thành phần.'], correctAnswer: 1, explanation: 'Hỏng 1 cái thì hở mạch.' },
+            { id: '12.22', type: 'mcq', question: 'Mạch gồm $6 \\, \\Omega$ nt với cụm ($10 \\, \\Omega$ // $15 \\, \\Omega$). Điện trở tương đương là', options: ['12 $\\Omega$.', '31 $\\Omega$.', '10 $\\Omega$.', '24 $\\Omega$.'], correctAnswer: 0, explanation: '$6+6=12 \\, \\Omega$.' },
+            { id: '12.23', type: 'mcq', question: 'Mạch trên nếu hiệu điện thế hai đầu là $24 \\, V$ thì cường độ dòng mạch chính là', options: ['2 A.', '1 A.', '1,5 A.', '2,4 A.'], correctAnswer: 0, explanation: '$24/12=2 \\, A$.' },
+            { id: '12.24', type: 'mcq', question: 'Một đèn $12 \\, V - 0,5 \\, A$ ss với điện trở $24 \\, \\Omega$ vào nguồn $12 \\, V$. Dòng mạch chính là', options: ['0,5 A.', '1 A.', '1,5 A.', '0,25 A.'], correctAnswer: 1, explanation: '$0,5+0,5=1 \\, A$.' },
 
-            // TRUE/FALSE (8 câu)
+            // TRUE/FALSE
             { id: '12.25', type: 'truefalse', context: 'Cho một đoạn mạch điện gồm ba điện trở được mắc nối tiếp với nhau.', statements: ['Cường độ dòng điện chạy qua ba điện trở luôn bằng nhau.', 'Điện trở tương đương của mạch luôn nhỏ hơn điện trở thành phần lớn nhất.', 'Hiệu điện thế tổng bằng tổng hiệu điện thế trên mỗi điện trở.', 'Nếu gỡ bỏ một điện trở (hở mạch), dòng điện vẫn chạy qua phần còn lại.'], correctPattern: [true, false, true, false], explanation: 'Tính chất mạch nối tiếp.' },
             { id: '12.26', type: 'truefalse', context: 'Mạch $R_1, R_2$ mắc song song vào nguồn hiệu điện thế không đổi. Biết $R_1 > R_2$.', statements: ['Hiệu điện thế giữa hai đầu $R_1$ lớn hơn hiệu điện thế hai đầu $R_2$.', 'Điện trở tương đương của đoạn mạch nhỏ hơn giá trị của $R_2$.', 'Cường độ dòng điện chạy qua $R_1$ nhỏ hơn cường độ qua $R_2$.', 'Nếu mắc thêm một điện trở $R_3$ song song, cường độ qua $R_1$ sẽ giảm đi.'], correctPattern: [false, true, true, false], explanation: 'Tính chất mạch song song.' },
             { id: '12.27', type: 'truefalse', context: 'Đo điện trở tương đương của hai điện trở $15 \\, \\Omega$ và $30 \\, \\Omega$.', statements: ['Mắc nối tiếp, vôn kế toàn mạch gấp 3 lần vôn kế trên $15 \\, \\Omega$.', 'Mắc nối tiếp, điện trở tương đương phải xấp xỉ $45 \\, \\Omega$.', 'Mắc song song, ampe kế mạch chính bằng tổng ampe kế các nhánh.', 'Mắc song song, điện trở tương đương phải xấp xỉ $20 \\, \\Omega$.'], correctPattern: [true, true, true, false], explanation: '$R_{ss}=10 \\, \\Omega$.' },
-            { id: '12.28', type: 'truefalse', context: 'Đèn $6 \\, V - 0,5 \\, A$ nối tiếp biến trở vào nguồn $9 \\, V$.', statements: ['Điện trở bóng đèn khi hoạt động bình thường là $12 \\, \\Omega$.', 'Để đèn sáng bình thường, biến trở phải bằng $6 \\, \\Omega$.', 'Nếu tăng biến trở, cường độ dòng điện trong mạch sẽ tăng.', 'Độ sáng của đèn phụ thuộc vào giá trị điện trở biến trở.'], correctPattern: [true, true, false, true], explanation: 'Định luật Ohm.' },
-            { id: '12.29', type: 'truefalse', context: 'Có ba điện trở giống nhau $R = 30 \\, \\Omega$.', statements: ['Nếu mắc cả ba nối tiếp thì điện trở tương đương là lớn nhất.', 'Có thể tạo ra mạch $R_{td} = 10 \\, \\Omega$ bằng cách ghép song song.', 'Ghép hai cái ss rồi nối tiếp cái ba, $R_{td} = 45 \\, \\Omega$.', 'Nếu mắc cả ba song song, tổng dòng điện mạch chính sẽ nhỏ hơn dòng qua từng điện trở.'], correctPattern: [true, true, true, false], explanation: '$I$ chính luôn bằng tổng các dòng nhánh.' },
-            { id: '12.30', type: 'truefalse', context: 'Mạch điện hỗn hợp: $R_1$ mắc nối tiếp với cụm ($R_2$ song song $R_3$).', statements: ['Dòng qua $R_1$ chính là dòng điện mạch chính.', 'Hiệu điện thế giữa hai đầu $R_2$ luôn bằng trên $R_3$.', 'Nếu $R_2$ bị đứt dây, toàn bộ mạch điện sẽ ngừng hoạt động.', 'Điện trở tương đương của toàn mạch nhỏ hơn $R_1$.'], correctPattern: [true, true, false, false], explanation: '$R_2$ đứt dòng vẫn đi qua $R_3$.' },
+            { id: '12.28', type: 'truefalse', context: 'Đèn $6 \\, V - 0,5 \\, A$ nối tiếp biến trở vào nguồn $9 \\, V$.', statements: ['Điện trở bóng đèn khi hoạt động bình thường là $12 \\, \\Omega$.', 'Để đèn sáng bình thường, biến trở phải bằng $6 \\, \\Omega$.', 'Nếu tăng biến trở, cường độ dòng điện trong mạch sẽ tăng.', 'Độ sáng của đèn phụ thuộc vào giá trị điện trở biến trở.'], correctPattern: [true, true, false, true], explanation: 'Ohm.' },
+            { id: '12.29', type: 'truefalse', context: 'Có ba điện trở giống nhau $R = 30 \\, \\Omega$.', statements: ['Nếu mắc cả ba nối tiếp thì điện trở tương đương là lớn nhất.', 'Có thể tạo ra mạch $R_{td} = 10 \\, \\Omega$ bằng cách ghép song song.', 'Ghép hai cái ss rồi nối tiếp cái ba, $R_{td} = 45 \\, \\Omega$.', 'Nếu mắc cả ba song song, tổng dòng điện mạch chính sẽ nhỏ hơn dòng qua từng điện trở.'], correctPattern: [true, true, true, false], explanation: 'Mạch ss.' },
+            { id: '12.30', type: 'truefalse', context: 'Mạch điện hỗn hợp: $R_1$ mắc nối tiếp với cụm ($R_2$ // $R_3$).', statements: ['Dòng qua $R_1$ chính là dòng điện mạch chính.', 'Hiệu điện thế giữa hai đầu $R_2$ luôn bằng trên $R_3$.', 'Nếu $R_2$ bị đứt dây, toàn bộ mạch điện sẽ ngừng hoạt động.', 'Điện trở tương đương của toàn mạch nhỏ hơn $R_1$.'], correctPattern: [true, true, false, false], explanation: 'R2 đứt dòng vẫn qua R3.' },
             { id: '12.31', type: 'truefalse', context: 'Cho mạch nguồn $12 \\, V$, một công tắc và hai thiết bị điện mắc nối tiếp.', statements: ['Nếu một thiết bị hỏng, thiết bị kia vẫn hoạt động được.', 'Hiệu điện thế tổng cộng trên hai thiết bị bằng đúng $12 \\, V$.', 'Thiết bị nào có điện trở lớn hơn sẽ có dòng điện qua lớn hơn.', 'Điện trở tương đương bằng tổng điện trở các thiết bị.'], correctPattern: [false, true, false, true], explanation: 'Mạch nối tiếp dòng bằng nhau.' },
-            { id: '12.32', type: 'truefalse', context: 'Các bóng đèn trong phòng mắc vào mạng điện $220 \\, V$.', statements: ['Các bóng đèn này bắt buộc phải mắc song song với nhau.', 'Khi tắt đèn phòng khách, hiệu điện thế đầu đèn phòng ngủ sẽ giảm.', 'Dòng điện qua mạch chính bằng tổng dòng qua các đèn đang bật.', 'Điện trở tương đương hệ thống đèn đang bật luôn lớn hơn $220 \\, \\Omega$.'], correctPattern: [true, false, true, false], explanation: 'Hiệu điện thế song song luôn ổn định.' },
+            { id: '12.32', type: 'truefalse', context: 'Các bóng đèn trong phòng mắc vào mạng điện $220 \\, V$.', statements: ['Các bóng đèn này bắt buộc phải mắc song song với nhau.', 'Khi tắt đèn phòng khách, hiệu điện thế đầu đèn phòng ngủ sẽ giảm.', 'Dòng điện qua mạch chính bằng tổng dòng qua các đèn đang bật.', 'Điện trở tương đương hệ thống đèn đang bật luôn lớn hơn $220 \\, \\Omega$.'], correctPattern: [true, false, true, false], explanation: 'U ss ổn định.' },
 
-            // SHORT ANSWER (8 câu)
+            // SHORT ANSWER
             { id: '12.33', type: 'short', question: 'Hai điện trở $40 \\, \\Omega$ và $60 \\, \\Omega$ mắc nối tiếp. Tính $R_{td}$ ($\\Omega$).', answer: '100', explanation: '$40+60=100$.' },
-            { id: '12.34', type: 'short', question: 'Mạch nối tiếp $15, 45 \\, \\Omega$, nguồn $12 \\, V$. Tính cường độ dòng chính ($A$). Ghi số thập phân.', answer: '0,2', explanation: '$12 / 60 = 0,2$.' },
+            { id: '12.34', type: 'short', question: 'Mạch nối tiếp $15, 45 \\, \\Omega$, nguồn $12 \\, V$. Tính cường độ dòng chính ($A$).', answer: '0,2', explanation: '$12/60=0,2$.' },
             { id: '12.35', type: 'short', question: 'Mắc song song 4 điện trở giống nhau $20 \\, \\Omega$. Tính $R_{td}$ ($\\Omega$).', answer: '5', explanation: '$20/4=5$.' },
-            { id: '12.36', type: 'short', question: 'Hai điện trở $10, 30 \\, \\Omega$ mắc song song. Dòng qua $10 \\, \\Omega$ là $0,5 \\, A$. Tính dòng chính ($A$).', answer: '0,67', explanation: '$U=5, I_2 = 5/30 \\approx 0,17 \\implies I = 0,67$.' },
-            { id: '12.37', type: 'short', question: 'Mắc song song $R_x$ với $100 \\, \\Omega$ để được $R_{td} = 20 \\, \\Omega$. Tính $R_x$ ($\\Omega$).', answer: '25', explanation: '$1/R_x = 1/20 - 1/100$.' },
-            { id: '12.38', type: 'short', question: 'Mạch $R_1$ nt ($R_2$ // $R_3$). $R_1=6, R_2=10, R_3=15, U=20 \\, V$. Tính $U_1$ (V).', answer: '10', explanation: '$R_{ss}=6, R_{td}=12, I=5/3 \\implies U_1 = 10$.' },
-            { id: '12.39', type: 'short', question: 'Chọn các nhận định ĐÚNG: 1.Rnt > Rss; 2.Int tăng khi số Rnt tăng; 3.Rss < Rmin; 4.Gia đình dùng mạch nt; 5.Đèn ss cháy 1 cái còn lại sáng; 6.Unt bằng nhau; 7.Vôn kế mắc nt; 8.Ampe kế mạch chính nt nguồn. Ghi dãy số ĐÚNG.', answer: '1358', explanation: '1, 3, 5, 8 đúng.' },
-            { id: '12.40', type: 'short', question: 'Thực hành: 1.I chính = tổng I nhánh; 2.Đo R chỉ cần vôn kế; 3.Thêm nhánh ss làm R tổng giảm; 4.Rnt < Rss; 5.Đổi chỗ R nt dòng không đổi; 6.Dòng qua R lớn nhiều hơn; 7.Ampe kế ss gây chập; 8.R=0 là hở. Ghi dãy số ĐÚNG.', answer: '1357', explanation: '1, 3, 5, 7 đúng.' }
+            { id: '12.36', type: 'short', question: 'Hai điện trở $10, 30 \\, \\Omega$ mắc song song. Dòng qua $10 \\, \\Omega$ là $0,5 \\, A$. Tính dòng chính ($A$).', answer: '0,67', explanation: '$U=5, I2=0,17 \\implies I=0,67$.' },
+            { id: '12.37', type: 'short', question: 'Mắc song song $R_x$ với $100 \\, \\Omega$ để được $R_{td} = 20 \\, \\Omega$. Tính $R_x$ ($\\Omega$).', answer: '25', explanation: '$1/Rx = 1/20 - 1/100$.' },
+            { id: '12.38', type: 'short', question: 'Mạch $R_1$ nt ($R_2$ // $R_3$). $R_1=6, R_2=10, R_3=15, U=20$. Tính $U_1$ (V).', answer: '10', explanation: '$Rss=6, Rtd=12, I=5/3 \\implies U1=10$.' },
+            { id: '12.39', type: 'short', question: 'Chọn ý ĐÚNG: 1.Rnt > Rss; 2.Int tăng khi số Rnt tăng; 3.Rss < Rmin; 4.Nhà dùng mạch nt; 5.Đèn ss hỏng cái này cái kia sáng; 6.Unt bằng nhau; 7.Vôn kế mắc nt; 8.Ampe kế mạch chính nt nguồn.', answer: '1358', explanation: '1, 3, 5, 8 đúng.' },
+            { id: '12.40', type: 'short', question: 'Thực hành: 1.I chính = tổng I nhánh; 2.Đo R chỉ cần vôn kế; 3.Thêm nhánh ss làm R tổng giảm; 4.Rnt < Rss; 5.Đổi chỗ R nt dòng không đổi; 6.Dòng qua R lớn nhiều hơn; 7.Ampe kế ss gây chập; 8.R=0 là hở.', answer: '1357', explanation: '1, 3, 5, 7 đúng.' }
         ];
 
         // --- AUDIO ---
@@ -314,6 +317,7 @@
 
         // --- GAME LOGIC ---
         let userSet = [], currentIndex = 0, answers = {}, currentMode = 'practice', timer = null, timeLeft = 0, isSubmitted = false;
+        let allResults = []; // Cache results for teacher panel
 
         function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
 
@@ -410,6 +414,29 @@
             if(currentIndex < 19) { currentIndex++; renderQuestion(); } else submitQuiz(); 
         }
 
+        function generateReviewHTML(uSet, uAns) {
+            let html = "";
+            uSet.forEach((q, idx) => {
+                const u = uAns[idx]; let ok = false, h = "";
+                if(q.type==='mcq') { 
+                    ok = (u===q.newCorrect); 
+                    h=`<div class="review-card ${ok?'correct':'wrong'}"><p><strong>Câu ${idx+1}:</strong> ${q.question}</p>`; 
+                    q.shuffledOptions.forEach((o,oi)=>{ let cn="opt-review"; if(oi===q.newCorrect)cn+=" opt-correct"; if(u===oi && u!==q.newCorrect)cn+=" opt-user-wrong"; h+=`<div class="${cn}">${String.fromCharCode(65+oi)}. ${o} ${u===oi?'(Bạn chọn)':''}</div>`; }); 
+                } else if(q.type==='truefalse') { 
+                    let c=0; h=`<div class="review-card"><p><strong>Câu ${idx+1}:</strong> ${q.context}</p><ul>`; 
+                    q.statements.forEach((s,si)=>{ const cor=q.correctPattern[si],usr=(u||{})[si],m=(usr===cor); if(m)c++; h+=`<li style="color:${m?'green':'red'}">${si === 0 ? 'a' : si === 1 ? 'b' : si === 2 ? 'c' : 'd'}) ${s} -> <b>${cor?'Đúng':'Sai'}</b></li>`; }); 
+                    if(c===4) ok=true; 
+                    h=h.replace('review-card',`review-card ${ok?'correct':'wrong'}`); h+='</ul>'; 
+                } else { 
+                    const nu=(u||"").replace(/\./g,','), nc=q.answer.replace(/\./g,','); ok=(nu===nc); 
+                    h=`<div class="review-card ${ok?'correct':'wrong'}"><p><strong>Câu ${idx+1}:</strong> ${q.question}</p><p>Học sinh nhập: <b>${u||'(Trống)'}</b> | Đáp án đúng: <b>${q.answer}</b></p>`; 
+                }
+                h+=`<div class="explanation-box"><b>Giải thích:</b> ${q.explanation}</div></div>`; 
+                html += h;
+            });
+            return html;
+        }
+
         async function submitQuiz(forced = false) {
             if(isSubmitted) return; isSubmitted = true; clearInterval(timer);
             if(forced) window.showAlert("Hệ thống tự động nộp bài!");
@@ -420,13 +447,12 @@
             document.getElementById('header-info').style.display = 'none';
             document.getElementById('result-title').innerText = currentMode === 'exam' ? 'KẾT QUẢ KIỂM TRA' : 'KẾT QUẢ LUYỆN TẬP';
             
-            let total = 0, review = document.getElementById('review-list'); review.innerHTML = "";
+            let total = 0;
             userSet.forEach((q, idx) => {
-                const u = answers[idx]; let ok = false, pt = 0, h = "";
-                if(q.type==='mcq') { ok = (u===q.newCorrect); pt = ok?0.25:0; h=`<div class="review-card ${ok?'correct':'wrong'}"><p><strong>Câu ${idx+1}:</strong> ${q.question}</p>`; q.shuffledOptions.forEach((o,oi)=>{ let cn="opt-review"; if(oi===q.newCorrect)cn+=" opt-correct"; if(u===oi && u!==q.newCorrect)cn+=" opt-user-wrong"; h+=`<div class="${cn}">${String.fromCharCode(65+oi)}. ${o} ${u===oi?'(Bạn chọn)':''}</div>`; }); }
-                else if(q.type==='truefalse') { let c=0; h=`<div class="review-card"><p><strong>Câu ${idx+1}:</strong> ${q.context}</p><ul>`; q.statements.forEach((s,si)=>{ const cor=q.correctPattern[si],usr=(u||{})[si],m=(usr===cor); if(m)c++; h+=`<li style="color:${m?'green':'red'}">${si === 0 ? 'a' : si === 1 ? 'b' : si === 2 ? 'c' : 'd'}) ${s} -> <b>${cor?'Đúng':'Sai'}</b></li>`; }); if(c===1)pt=0.0625; else if(c===2)pt=0.125; else if(c===3)pt=0.25; else if(c===4){pt=0.5; ok=true;} h=h.replace('review-card',`review-card ${ok?'correct':'wrong'}`); h+='</ul>'; }
-                else { const nu=(u||"").replace(/\./g,','), nc=q.answer.replace(/\./g,','); ok=(nu===nc); pt=ok?0.5:0; h=`<div class="review-card ${ok?'correct':'wrong'}"><p><strong>Câu ${idx+1}:</strong> ${q.question}</p><p>Bạn nhập: <b>${u||'(Trống)'}</b> | Đáp án: <b>${q.answer}</b></p>`; }
-                h+=`<div class="explanation-box"><b>Giải thích:</b> ${q.explanation}</div></div>`; review.innerHTML += h; total += pt;
+                const u = answers[idx]; let c=0;
+                if(q.type==='mcq') { if(u===q.newCorrect) total+=0.25; }
+                else if(q.type==='truefalse') { q.statements.forEach((s,si)=>{ if((u||{})[si]===q.correctPattern[si]) c++; }); if(c===1)total+=0.0625; else if(c===2)total+=0.125; else if(c===3)total+=0.25; else if(c===4)total+=0.5; }
+                else { if((u||"").replace(/\./g,',') === q.answer.replace(/\./g,',')) total+=0.5; }
             });
 
             const score = total.toFixed(1);
@@ -437,9 +463,11 @@
             const user = JSON.parse(localStorage.getItem('khtn9_user'));
             document.getElementById('user-final-info').innerText = `${user.name} - SBD: ${user.sbd} - Lớp: ${user.class}`;
             
+            document.getElementById('review-list').innerHTML = generateReviewHTML(userSet, answers);
+
             if (currentMode === 'exam') {
                 document.getElementById('save-status').innerText = "Đang lưu kết quả...";
-                await window.saveResultToFirebase({ ...user, score, rank }, currentMode);
+                await window.saveResultToFirebase({ ...user, score, rank, answers, userSet }, currentMode);
                 document.getElementById('save-status').innerText = "Đã lưu kết quả.";
             } else {
                 document.getElementById('save-status').innerText = "Kết quả luyện tập không được lưu.";
@@ -455,6 +483,7 @@
                 document.getElementById('screen-teacher-dash').classList.add('active');
                 
                 window.listenResults((results) => {
+                    allResults = results;
                     results.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
                     const tbody = document.querySelector('#table-results tbody');
                     tbody.innerHTML = results.map(r => `
@@ -465,12 +494,28 @@
                             <td style="padding:10px; border:1px solid #ddd; font-weight:bold;">${r.score}</td>
                             <td style="padding:10px; border:1px solid #ddd;">${r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString() : '...'}</td>
                             <td style="padding:10px; border:1px solid #ddd; text-align:center;">
+                                <button class="btn-view" onclick="viewSubmission('${r.id}')">Xem bài</button>
                                 <button class="btn-delete" onclick="deleteResult('${r.id}')">Xoá</button>
                             </td>
                         </tr>
                     `).join('');
                 });
             } else { window.showAlert("Mã bảo mật không đúng!"); }
+        }
+
+        function viewSubmission(id) {
+            const data = allResults.find(r => r.id === id);
+            if (!data) return;
+            document.getElementById('screen-teacher-dash').classList.remove('active');
+            document.getElementById('screen-teacher-detail').classList.add('active');
+            document.getElementById('detail-student-name').innerText = `BÀI LÀM: ${data.name} (${data.sbd}) - ĐIỂM: ${data.score}`;
+            document.getElementById('detail-review-list').innerHTML = generateReviewHTML(data.userSet, data.answers);
+            if(window.MathJax) MathJax.typesetPromise();
+        }
+
+        function backToDashboard() {
+            document.getElementById('screen-teacher-detail').classList.remove('active');
+            document.getElementById('screen-teacher-dash').classList.add('active');
         }
 
         function confirmExamMode() { startGame('exam'); }
