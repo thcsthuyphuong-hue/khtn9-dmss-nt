@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Vật lí 9 - Bài 12</title>
+    <!-- MathJax cho công thức Vật lí chuẩn Bộ GD&ĐT -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']], processEscapes: true },
+            options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; color: #1e293b; overflow: hidden; height: 100vh; }
+        .gold-3d { color: #d4af37; text-shadow: 1px 1px 0 #b8860b; font-weight: bold; }
+        .btn-blue { background-color: #1e40af; transition: all 0.2s; }
+        .btn-blue:hover { background-color: #1d4ed8; }
+        .fixed-header { height: 45px; position: fixed; top: 0; width: 100%; background: #1e40af; color: white; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; z-index: 50; }
+        .fixed-footer { height: 30px; position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #64748b; line-height: 30px; z-index: 50; }
+        .content-area { margin-top: 45px; margin-bottom: 30px; height: calc(100vh - 75px); overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 10px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); width: 100%; max-width: 800px; padding: 15px; border: 1px solid #e2e8f0; }
+        .option-card { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; cursor: pointer; transition: 0.2s; font-size: 16px; display: flex; align-items: center; }
+        .option-card:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .option-card.selected { border-color: #1e40af; background-color: #dbeafe; font-weight: 600; }
+        input[type="text"] { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; width: 100%; outline: none; text-align: center; font-weight: bold; }
+        input[type="text"]:focus { border-color: #1e40af; }
+        .violation-msg { color: #dc2626; font-weight: bold; font-size: 12px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- MÀN HÌNH KHỞI ĐỘNG -->
+    <div id="screen-start" class="content-area justify-center">
+        <div class="card max-w-md text-center">
+            <div class="mb-4">
+                <span class="text-5xl">📖</span>
+                <h1 class="gold-3d text-2xl mt-2 uppercase">Vật lí 9 - Bài 12</h1>
+                <p class="text-blue-900 font-bold text-sm uppercase">Đoạn mạch nối tiếp - song song</p>
+                <p class="text-[10px] text-red-500 mt-2 font-medium">Lưu ý: Nếu rời khỏi màn hình làm bài, hệ thống sẽ tự động nộp bài ngay lập tức.</p>
+            </div>
+            <div class="space-y-2 mb-6 text-sm">
+                <input type="text" id="in-sbd" placeholder="Số báo danh">
+                <input type="text" id="in-name" placeholder="Họ và tên thí sinh">
+                <div class="flex gap-2">
+                    <input type="text" id="in-class" placeholder="Lớp">
+                    <input type="text" id="in-school" placeholder="Trường">
+                </div>
+            </div>
+            <button onclick="startGame()" class="btn-blue text-white w-full py-3 rounded-xl font-bold uppercase tracking-widest shadow-lg">Bắt đầu ngay</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH CÂU HỎI -->
+    <div id="screen-game" class="hidden">
+        <header class="fixed-header">
+            <div id="user-display" class="text-xs font-medium truncate max-w-[60%]"></div>
+            <div id="timer" class="bg-white text-blue-800 px-3 py-0.5 rounded-full font-bold text-sm">120s</div>
+        </header>
+
+        <div class="content-area">
+            <div class="card">
+                <div id="part-title" class="text-blue-700 font-bold text-[11px] uppercase border-b pb-1 mb-2"></div>
+                <div class="flex items-baseline gap-2 mb-2">
+                    <span id="question-no" class="text-red-600 font-bold text-lg"></span>
+                    <div id="question-text" class="font-medium text-[17px] text-gray-800 leading-snug"></div>
+                </div>
+                
+                <div id="answer-zone" class="space-y-1"></div>
+
+                <div class="flex justify-between items-center mt-6 pt-3 border-t">
+                    <button id="btn-prev" onclick="changeQ(-1)" class="text-gray-400 font-bold px-4 py-2 hover:text-blue-600 uppercase text-xs">Quay lại</button>
+                    <button id="btn-next" onclick="changeQ(1)" class="btn-blue text-white px-8 py-2 rounded-lg font-bold shadow-md uppercase text-xs">Tiếp theo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH KẾT QUẢ -->
+    <div id="screen-result" class="hidden content-area justify-center">
+        <div class="card max-w-lg text-center">
+            <h2 class="text-gray-500 font-bold text-xs uppercase mb-1">Kết quả bài làm</h2>
+            <div id="final-rank-text" class="text-4xl font-black gold-3d mb-4"></div>
+            <div id="violation-notice" class="violation-msg hidden mb-4">BÀI LÀM ĐÃ TỰ ĐỘNG NỘP DO PHÁT HIỆN RỜI KHỎI MÀN HÌNH THI!</div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">Tổng điểm</p>
+                    <p id="total-score" class="text-3xl font-black text-blue-900"></p>
+                </div>
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">Xếp loại</p>
+                    <p id="rank-name" class="text-xl font-black text-amber-700"></p>
+                </div>
+            </div>
+
+            <div class="text-left bg-gray-50 p-4 rounded-xl mb-6 text-xs space-y-2 border border-gray-200">
+                <div class="flex justify-between"><span>Phần I (Nhiều lựa chọn):</span><span id="res-p1" class="font-bold text-blue-700"></span></div>
+                <div class="flex justify-between"><span>Phần II (Đúng/Sai):</span><span id="res-p2" class="font-bold text-blue-700"></span></div>
+                <div class="flex justify-between"><span>Phần III (Trả lời ngắn):</span><span id="res-p3" class="font-bold text-blue-700"></span></div>
+            </div>
+
+            <button onclick="showReview()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold mb-3 hover:bg-black uppercase text-sm">Xem giải thích chi tiết</button>
+            <button onclick="location.reload()" class="w-full border-2 border-blue-800 text-blue-800 py-2 rounded-xl font-bold text-sm">Làm đề mới</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH REVIEW CHI TIẾT -->
+    <div id="screen-review" class="hidden content-area">
+        <div class="card overflow-y-auto" style="max-height: 90%;">
+            <h2 class="text-lg font-bold mb-4 text-center border-b pb-2 uppercase">Lịch sử bài làm & Phân tích chuyên môn</h2>
+            <div id="review-list" class="space-y-6"></div>
+            <button onclick="hideReview()" class="w-full mt-6 btn-blue text-white py-3 rounded-xl font-bold shadow-lg uppercase">Quay lại bảng điểm</button>
+        </div>
+    </div>
+
+    <footer class="fixed-footer italic">
+        Bản quyền thuộc về Thạc sĩ Nguyễn Văn Cần, Thành phố Huế
+    </footer>
+
+    <script>
+        // NGÂN HÀNG CÂU HỎI TRÍCH XUẤT TỪ FILE WORD
+        const BANK_I = [
+            { id: "12.1", q: "Đoạn mạch gồm hai điện trở thành phần mắc nối tiếp. Khẳng định nào sau đây là đúng về điện trở tương đương của đoạn mạch?", options: ["Bằng tổng các điện trở thành phần.", "Nhỏ hơn điện trở thành phần nhỏ nhất.", "Bằng tích các điện trở thành phần.", "Bằng hiệu các điện trở thành phần."], correct: 0, explain: "Trong đoạn mạch nối tiếp, điện trở tương đương bằng tổng các điện trở thành phần: $R_{td} = R_1 + R_2$. Vì vậy, giá trị này luôn lớn hơn bất kỳ điện trở nào trong đoạn mạch." },
+            { id: "12.2", q: "Đối với đoạn mạch gồm hai điện trở mắc song song, điện trở tương đương của đoạn mạch KHÔNG thể có đặc điểm nào sau đây?", options: ["Nhỏ hơn điện trở thành phần thứ nhất.", "Nhỏ hơn điện trở thành phần thứ hai.", "Lớn hơn các điện trở thành phần.", "Nhỏ hơn điện trở thành phần nhỏ nhất."], correct: 2, explain: "Mạch song song có $R_{td}$ luôn nhỏ hơn mọi điện trở nhánh ($R_{td} < R_1$ và $R_{td} < R_2$). Do đó, nó KHÔNG thể lớn hơn các điện trở thành phần." },
+            { id: "12.3", q: "Trong một đoạn mạch mắc nối tiếp gồm hai điện trở khác nhau, đại lượng nào sau đây có giá trị như nhau tại mọi điểm?", options: ["Điện trở tương đương.", "Hiệu điện thế.", "Cường độ dòng điện.", "Công suất tỏa nhiệt."], correct: 2, explain: "Dựa trên tính chất mạch nối tiếp: Dòng điện chỉ có một đường đi duy nhất, nên cường độ dòng điện $I$ là như nhau tại mọi vị trí trong mạch ($I = I_1 = I_2$)." },
+            { id: "12.4", q: "Trong đoạn mạch gồm hai bóng đèn mắc song song, đại lượng nào sau đây có giá trị như nhau cho các bóng đèn?", options: ["Hiệu điện thế.", "Cường độ dòng điện.", "Điện trở.", "Công suất."], correct: 0, explain: "Mạch song song có các thiết bị cùng nối vào hai điểm nút, do đó hiệu điện thế $U$ trên các thiết bị là bằng nhau và bằng hiệu điện thế nguồn ($U = U_1 = U_2$)." },
+            { id: "12.5", q: "Cho hai điện trở $R_1 = 10 \\,\\Omega$ và $R_2 = 20 \\,\\Omega$ mắc nối tiếp. Điện trở tương đương của đoạn mạch là", options: ["10 $\\Omega$.", "20 $\\Omega$.", "30 $\\Omega$.", "6,67 $\\Omega$."], correct: 2, explain: "Áp dụng công thức mạch nối tiếp: $R_{td} = R_1 + R_2 = 10 + 20 = 30 \\, \\Omega$." },
+            { id: "12.6", q: "Hai điện trở $R_1 = 6 \\,\\Omega$ và $R_2 = 12 \\,\\Omega$ mắc song song. Điện trở tương đương của đoạn mạch là", options: ["18 $\\Omega$.", "4 $\\Omega$.", "2 $\\Omega$.", "0,5 $\\Omega$."], correct: 1, explain: "Áp dụng công thức mạch song song: $R_{td} = \\frac{R_1 \\cdot R_2}{R_1 + R_2} = \\frac{6 \\cdot 12}{6 + 12} = \\frac{72}{18} = 4 \\, \\Omega$." },
+            { id: "12.7", q: "Đơn vị đo của điện trở trong hệ đo lường quốc tế (SI) là gì?", options: ["Ampe (A).", "Vôn (V).", "Oát (W).", "Ôm ($\\Omega$)."], correct: 3, explain: "Ôm (kí hiệu $\\Omega$) là đơn vị đo điện trở, được đặt theo tên nhà vật lí Georg Simon Ohm." },
+            { id: "12.8", q: "Nếu tăng thêm số điện trở mắc song song vào một đoạn mạch thì điện trở tương đương của mạch đó sẽ", options: ["tăng lên.", "không đổi.", "bằng tổng các điện trở.", "giảm đi."], correct: 3, explain: "Khi mắc song song thêm điện trở, ta mở thêm đường đi cho dòng điện, tương đương với việc tăng thiết diện dây dẫn, làm giảm trở lực tổng cộng ($R_{td}$ giảm)." },
+            { id: "12.9", q: "Mạch điện có 3 điện trở giống nhau mắc nối tiếp, $R_{td} = 45 \\, \\Omega$. Giá trị mỗi điện trở thành phần là", options: ["15 $\\Omega$.", "45 $\\Omega$.", "135 $\\Omega$.", "5 $\\Omega$."], correct: 0, explain: "$R_{td} = 3R \\implies R = 45/3 = 15 \\, \\Omega$." },
+            { id: "12.10", q: "Trong đoạn mạch song song gồm 2 điện trở, cường độ dòng điện mạch chính $I$ liên hệ với các dòng nhánh $I_1, I_2$ như thế nào?", options: ["$I = I_1 = I_2$", "$I = I_1 + I_2$", "$I = I_1 - I_2$", "$I = I_1 \\cdot I_2$"], correct: 1, explain: "Định luật nút mạch: Tổng cường độ dòng điện đi vào một nút bằng tổng các dòng điện đi ra khỏi nút đó ($I = I_1 + I_2$)." },
+            { id: "12.11", q: "Khi một bóng đèn trong mạch mắc nối tiếp bị đứt dây tóc thì", options: ["các đèn còn lại tắt hết.", "các đèn còn lại vẫn sáng.", "mạch vẫn có dòng điện.", "điện trở mạch giảm đi."], correct: 0, explain: "Mạch nối tiếp có dòng điện duy nhất. Một đèn hỏng làm hở mạch, không còn dòng điện chạy trong toàn bộ mạch." },
+            { id: "12.12", q: "Hai điện trở $R_1, R_2$ mắc song song, biết $R_1 = 2 R_2$. So sánh cường độ dòng điện $I_1$ và $I_2$ qua chúng:", options: ["$I_1 = 2 I_2$", "$I_2 = 2 I_1$", "$I_1 = I_2$", "$I_1 = 4 I_2$"], correct: 1, explain: "Trong mạch song song, hiệu điện thế $U$ bằng nhau. Do đó $I = U/R$, cường độ tỉ lệ nghịch với điện trở. $R_1$ lớn gấp đôi thì $I_1$ bằng một nửa $I_2$ ($I_2 = 2 I_1$)." }
+        ];
+
+        const BANK_II = [
+            { id: "12.II.1", q: "Mạch điện gồm $R_1 = 30 \\, \\Omega$ và $R_2 = 60 \\, \\Omega$ mắc vào nguồn $U = 12 \\, V$. Hãy chọn Đúng/Sai:", items: [
+                { text: "a) Nếu mắc nối tiếp, điện trở tương đương của mạch là $90 \\, \\Omega$.", correct: true },
+                { text: "b) Nếu mắc song song, điện trở tương đương của mạch là $20 \\, \\Omega$.", correct: true },
+                { text: "c) Trong cách mắc nối tiếp, cường độ qua $R_1$ lớn gấp đôi qua $R_2$.", correct: false },
+                { text: "d) Trong cách mắc song song, cường độ qua $R_1$ lớn gấp đôi qua $R_2$.", correct: true }
+            ], explain: "Nối tiếp: $R_{td} = 90 \\, \\Omega$, $I$ bằng nhau. Song song: $R_{td} = (30 \\cdot 60)/90 = 20 \\, \\Omega$, $I$ tỉ lệ nghịch $R$, nên $I_1/I_2 = R_2/R_1 = 2$." },
+            { id: "12.II.2", q: "Các thiết bị điện gia đình như bóng đèn, tivi được mắc song song vào mạng điện 220 V. Hãy chọn Đúng/Sai:", items: [
+                { text: "a) Các thiết bị hoạt động độc lập, tắt tivi thì bóng đèn vẫn sáng.", correct: true },
+                { text: "b) Hiệu điện thế giữa hai đầu tivi và bóng đèn đều bằng 220 V.", correct: true },
+                { text: "c) Cường độ dòng điện chạy qua tivi và bóng đèn luôn bằng nhau.", correct: false },
+                { text: "d) Tổng cường độ dòng điện mạch chính bằng tổng cường độ qua từng thiết bị.", correct: true }
+            ], explain: "Đặc điểm mạch song song gia đình giúp các thiết bị hoạt động ở đúng điện thế định mức và độc lập với nhau." }
+        ];
+
+        const BANK_III = [
+            { id: "12.III.1", q: "Hai điện trở $40 \\, \\Omega$ và $60 \\, \\Omega$ mắc nối tiếp. Tính $R_{td}$ của mạch (đơn vị $\\Omega$).", ans: "100", explain: "Mạch nối tiếp: $R_{td} = R_1 + R_2 = 100 \\, \\Omega$." },
+            { id: "12.III.2", q: "Mắc song song $R_1 = 20 \\, \\Omega$ và $R_2 = 30 \\, \\Omega$. Tính điện trở tương đương (đơn vị $\\Omega$).", ans: "12", explain: "Mạch song song: $R_{td} = (20 \\cdot 30)/(20 + 30) = 12 \\, \\Omega$." },
+            { id: "12.III.3", q: "Cho các nhận định về mạch điện song song:\n1. Hiệu điện thế các nhánh bằng nhau.\n2. Cường độ dòng điện mạch chính bằng tổng dòng các nhánh.\n3. Điện trở tương đương bằng tổng các điện trở thành phần.\n4. Mắc thêm thiết bị song song làm giảm điện trở tổng.\n5. Một nhánh hỏng, toàn bộ mạch tắt.\nChọn các nhận định ĐÚNG rồi ghi dãy số tăng dần.", ans: "124", explain: "Nhận định 1, 2, 4 đúng cho mạch song song. Nhận định 3 sai (đó là mạch nối tiếp), nhận định 5 sai (mạch song song hoạt động độc lập)." }
+        ];
+
+        // LOGIC TRÒ CHƠI
+        let quiz = [], userAns = [], currentIdx = 0, timer, timeLeft = 120;
+        let isTesting = false;
+        let wasViolated = false;
+
+        function shuffle(arr) { return arr.sort(() => Math.random() - 0.5); }
+
+        function startGame() {
+            const name = document.getElementById('in-name').value;
+            const sbd = document.getElementById('in-sbd').value;
+            if(!name || !sbd) return alert("Thí sinh vui lòng nhập đầy đủ Họ tên và SBD!");
+
+            // TRỘN VÀ CHỌN ĐỀ NGẪU NHIÊN
+            let p1 = shuffle([...BANK_I]).slice(0, 12).map(q => {
+                let opts = q.options.map((t, i) => ({t, id: i}));
+                shuffle(opts);
+                return {...q, options: opts.map(o => o.t), correct: opts.findIndex(o => o.id === q.correct), type: 'P1'};
+            });
+            let p2 = shuffle([...BANK_II]).slice(0, 4).map(q => ({...q, type: 'P2'}));
+            let p3 = shuffle([...BANK_III]).slice(0, 4).map(q => ({...q, type: 'P3'}));
+
+            quiz = [...p1, ...p2, ...p3];
+            userAns = new Array(quiz.length).fill(null);
+            
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+            document.getElementById('user-display').innerText = `${name.toUpperCase()} (SBD: ${sbd})`;
+            
+            isTesting = true;
+            wasViolated = false;
+            showQuestion();
+        }
+
+        // TÍNH NĂNG CHỐNG GIAN LẬN: THEO DÕI TRẠNG THÁI CỬA SỔ
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState === 'hidden' && isTesting) {
+                wasViolated = true;
+                finish();
+            }
+        });
+
+        function showQuestion() {
+            if (!isTesting) return;
+            const q = quiz[currentIdx];
+            document.getElementById('part-title').innerText = 
+                currentIdx < 12 ? "Phần I. Trắc nghiệm khách quan dạng nhiều lựa chọn (3,0 điểm)" :
+                currentIdx < 16 ? "Phần II. Trắc nghiệm khách quan dạng đúng / sai (2,0 điểm)" :
+                "Phần III. Trắc nghiệm khách quan dạng trả lời ngắn (2,0 điểm)";
+            
+            document.getElementById('question-no').innerText = `Câu ${currentIdx + 1}.`;
+            document.getElementById('question-text').innerHTML = q.q.replace(/\n/g, '<br>');
+            
+            const az = document.getElementById('answer-zone');
+            az.innerHTML = '';
+
+            // Timer reset
+            clearInterval(timer);
+            timeLeft = (currentIdx < 12) ? 90 : 120;
+            updateTimerUI();
+            timer = setInterval(() => {
+                timeLeft--; updateTimerUI();
+                if(timeLeft <= 0) changeQ(1);
+            }, 1000);
+
+            if(q.type === 'P1') {
+                q.options.forEach((opt, i) => {
+                    const d = document.createElement('div');
+                    d.className = `option-card ${userAns[currentIdx] === i ? 'selected' : ''}`;
+                    d.innerHTML = `<span class="font-bold mr-2">${String.fromCharCode(65+i)}.</span> ${opt}`;
+                    d.onclick = () => { userAns[currentIdx] = i; showQuestion(); };
+                    az.appendChild(d);
+                });
+            } else if(q.type === 'P2') {
+                if(!userAns[currentIdx]) userAns[currentIdx] = [null, null, null, null];
+                q.items.forEach((item, i) => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between p-1.5 border-b border-gray-100 text-sm";
+                    row.innerHTML = `<div class="flex-grow pr-4">${item.text}</div>
+                        <div class="flex gap-1">
+                            <button onclick="setP2(${i}, true)" class="w-10 py-1 rounded border font-bold ${userAns[currentIdx][i] === true ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-400'}">Đ</button>
+                            <button onclick="setP2(${i}, false)" class="w-10 py-1 rounded border font-bold ${userAns[currentIdx][i] === false ? 'bg-red-600 text-white' : 'bg-gray-50 text-gray-400'}">S</button>
+                        </div>`;
+                    az.appendChild(row);
+                });
+            } else {
+                const input = document.createElement('input');
+                input.type = "text";
+                input.className = "text-xl tracking-[0.2em] p-3 border-2 border-blue-100";
+                input.placeholder = "NHẬP ĐÁP ÁN...";
+                input.maxLength = 4;
+                input.value = userAns[currentIdx] || '';
+                input.oninput = (e) => userAns[currentIdx] = e.target.value.replace(/\s+/g, '').toUpperCase();
+                az.appendChild(input);
+            }
+
+            document.getElementById('btn-prev').style.visibility = currentIdx > 0 ? 'visible' : 'hidden';
+            document.getElementById('btn-next').innerText = currentIdx === quiz.length - 1 ? "NỘP BÀI" : "TIẾP THEO";
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        function setP2(idx, val) { userAns[currentIdx][idx] = val; showQuestion(); }
+        function changeQ(step) {
+            if(currentIdx + step >= 0 && currentIdx + step < quiz.length) {
+                currentIdx += step; showQuestion();
+            } else if(currentIdx + step === quiz.length) {
+                finish();
+            }
+        }
+
+        function updateTimerUI() {
+            const t = document.getElementById('timer');
+            t.innerText = timeLeft + "s";
+            t.style.color = timeLeft < 15 ? 'red' : '#1e40af';
+        }
+
+        function finish() {
+            isTesting = false;
+            clearInterval(timer);
+            let s1=0, s2=0, s3=0;
+            quiz.forEach((q, idx) => {
+                const a = userAns[idx];
+                if(q.type === 'P1' && a === q.correct) s1 += 0.25;
+                else if(q.type === 'P2' && a) {
+                    let c = 0; q.items.forEach((it, i) => { if(a[i] === it.correct) c++; });
+                    if(c === 1) s2 += 0.0625; else if(c === 2) s2 += 0.125; else if(c === 3) s2 += 0.25; else if(c === 4) s2 += 0.5;
+                }
+                else if(q.type === 'P3' && a && a === q.ans) s3 += 0.5;
+            });
+
+            const total = (s1 + s2 + s3).toFixed(1);
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+            
+            document.getElementById('total-score').innerText = `${total}/7.0`;
+            document.getElementById('res-p1').innerText = s1.toFixed(2) + " đ";
+            document.getElementById('res-p2').innerText = s2.toFixed(2) + " đ";
+            document.getElementById('res-p3').innerText = s3.toFixed(2) + " đ";
+
+            if (wasViolated) document.getElementById('violation-notice').classList.remove('hidden');
+
+            let rank = "CHƯA ĐẠT";
+            if(total >= 6) rank = "XUẤT SẮC"; else if(total >= 5) rank = "GIỎI"; else if(total >= 4) rank = "KHÁ"; else if(total >= 3) rank = "ĐẠT";
+            document.getElementById('final-rank-text').innerText = rank;
+            document.getElementById('rank-name').innerText = rank;
+        }
+
+        function showReview() {
+            const list = document.getElementById('review-list');
+            list.innerHTML = '';
+            quiz.forEach((q, idx) => {
+                const card = document.createElement('div');
+                const ok = isQuestionCorrect(q, userAns[idx]);
+                card.className = `p-4 rounded-xl border-l-4 ${ok ? 'border-green-500 bg-green-50/20' : 'border-red-500 bg-red-50/20'}`;
+                let h = `<div class="font-bold text-sm text-slate-800 mb-1">Câu ${idx+1}. ${q.q}</div>`;
+                if(q.type === 'P1') {
+                    q.options.forEach((o, i) => {
+                        let cl = i === q.correct ? 'text-green-700 font-bold' : (i === userAns[idx] ? 'text-red-700 line-through' : '');
+                        h += `<div class="text-xs ml-4 ${cl}">${String.fromCharCode(65+i)}. ${o}</div>`;
+                    });
+                } else if(q.type === 'P2') {
+                    q.items.forEach((it, i) => {
+                        let v = userAns[idx] ? userAns[idx][i] : null;
+                        let r = v === it.correct;
+                        h += `<div class="text-[10px] ml-4 ${r?'text-green-600':'text-red-600'}">
+                            ${it.text} → Đáp án: <b>${it.correct?'Đ':'S'}</b> | Bạn: <b>${v===null?'Trống':(v?'Đ':'S')}</b>
+                        </div>`;
+                    });
+                } else {
+                    h += `<div class="text-xs ml-4">Đáp án: <b class="text-green-600">${q.ans}</b> | Bạn nhập: <b class="text-red-600">${userAns[idx] || 'Trống'}</b></div>`;
+                }
+                h += `<div class="mt-2 p-2 bg-white rounded-lg text-[10px] text-blue-800 border border-blue-100 italic"><b>Phân tích chuyên môn:</b> ${q.explain}</div>`;
+                card.innerHTML = h;
+                list.appendChild(card);
+            });
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-review').classList.remove('hidden');
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        function isQuestionCorrect(q, a) {
+            if(!a) return false;
+            if(q.type === 'P1') return a === q.correct;
+            if(q.type === 'P3') return a === q.ans;
+            return a.every((v, i) => v === q.items[i].correct);
+        }
+
+        function hideReview() { document.getElementById('screen-review').classList.add('hidden'); document.getElementById('screen-result').classList.remove('hidden'); }
+    </script>
+</body>
+</html>
